@@ -60,8 +60,9 @@ def GenerateKeywords(HostArray):
     return keywords
 
 
-def SearchKeyword(keyword, apiKey=None):
+def SearchKeyword(keyword, term_width, apiKey=None):
     #search for the keyword in the NVD database
+    print(" " * term_width, end="\r") # we NEED to clear terminal here
     print(
         "Searching vulnerability database for keyword"
         + f" {keyword}... CTRL-C to skip", end="\r"
@@ -104,11 +105,11 @@ def SearchKeyword(keyword, apiKey=None):
     return "", []
 
 
-def SearchSploits(HostArray, term_width, term_cols, apiKey=None):
+def SearchSploits(HostArray, term_width, apiKey=None):
     VulnsArray = []
     target = str(HostArray[0][0])
 
-    banner(f"Possible vulnerabilities for {target}", "red", term_width)
+    banner(f"Possible vulnerabilities for {target}", "red")
 
     keywords = GenerateKeywords(HostArray)
 
@@ -124,7 +125,7 @@ def SearchSploits(HostArray, term_width, term_cols, apiKey=None):
     for keyword in keywords:
         #https://github.com/vehemont/nvdlib
         #search the NIST vulnerabilities database for the generated keywords
-        CPETitle, ApiResponseCVE = SearchKeyword(keyword, apiKey)
+        CPETitle, ApiResponseCVE = SearchKeyword(keyword, term_width, apiKey)
 
         #if the keyword is found in the NVD database, print the title of the vulnerable software
         if CPETitle == "" and len(ApiResponseCVE) == 0:
@@ -137,6 +138,7 @@ def SearchSploits(HostArray, term_width, term_cols, apiKey=None):
         # create a Vuln object
         VulnObject = Vuln(Software=Title, CVEs=[])
 
+        print(" " * term_width, end="\r") # we NEED to clear terminal here
         console.print(f"┌─[yellow][{Title}][/yellow]")
 
         for CVE in ApiResponseCVE:
@@ -159,12 +161,12 @@ def SearchSploits(HostArray, term_width, term_cols, apiKey=None):
                            f"Could not fetch exploitability score for {CVE.id}"
                         )
 
-            wrapped_description = wrap(description, term_cols-50)
+            wrapped_description = wrap(description, term_width-50)
             console.print(f"│\t\t[cyan]Description: [/cyan]")
             for line in wrapped_description:
                 print(f"│\t\t\t{line}")
             console.print(
-                f"│\t\[cyan]Severity: [/cyan]{severity} - {score}\n"
+                f"│\t\t[cyan]Severity: [/cyan]{severity} - {score}\n"
                 + f"│\t\t[cyan]Exploitability: [/cyan] {exploitability}\n"
                 + f"│\t\t[cyan]Details: [/cyan] {details}"
             )
