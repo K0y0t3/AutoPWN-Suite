@@ -13,9 +13,8 @@ def banner(msg, color):
     term_width, _ = get_terminal_size()
 
     console.print("─"*term_width, style=color)
-    console.print(Text(msg, justify="center"), style=color)
+    console.print(Text(msg.center(term_width)), style=color)
     console.print("─"*term_width, style=color)
-    log.logger("info", msg)
 
 
 class Logger:
@@ -38,9 +37,9 @@ class Logger:
             ]
         self.log: object = logging.getLogger("rich")
 
-        file_log: object = logging.FileHandler(filename="output.log")
+        file_log: object = logging.FileHandler(filename="autopwn.log")
         if filename is not None:
-            file_log: object = logging.FileHandler(filename="autopwn.log")
+            file_log: object = logging.FileHandler(filename=filename)
 
         file_log.setLevel(logging.INFO)
         file_log.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
@@ -69,8 +68,8 @@ class Logger:
         if exception_ == "info":
             self.log.info(f"[+] {message}")
         elif exception_ == "error":
-            self.log.warning(f"[-] {message}")
+            self.log.error(f"[-] {message}")
         elif exception_ == "warning":
-            self.log.info(f"[*] {message}")
+            self.log.warning(f"[*] {message}")
         elif exception_ == "success":
             self.log.info(f"[+] {message}")
