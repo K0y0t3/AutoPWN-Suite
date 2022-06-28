@@ -10,7 +10,7 @@ def webvuln(target):
     Test for web vulnerabilities
     """
     log = Logger()
-    test_lfi = TestLFI()
+    LFI = TestLFI()
 
     def get_url(target):
         """
@@ -39,7 +39,7 @@ def webvuln(target):
     for url in urls: # test for lfi
         if "?" in url:
             print(f"Testing for LFI on {url}", end="\r")
-            test_lfi(url)
+            LFI.test_lfi(url)
             tested_urls.append(url)
 
     if len(tested_urls) == 0:
