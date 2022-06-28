@@ -1,6 +1,7 @@
 from multiprocessing import Process
 from dataclasses import dataclass
 from enum import Enum
+from time import sleep
 
 try:
     from os import getuid
@@ -38,11 +39,11 @@ class TargetInfo:
 
     def colored(self):
         return (
-            f"{bcolors.yellow}MAC Address : {bcolors.endc} {self.mac}\n"
-            + f"{bcolors.yellow}Vendor : {bcolors.endc} {self.vendor}\n"
-            + f"{bcolors.yellow}OS : {bcolors.endc} {self.os}\n"
-            + f"{bcolors.yellow}Accuracy : {bcolors.endc} {self.os_accuracy}"
-            + f"{bcolors.yellow}Type : {bcolors.endc} {self.os_type[:20]}\n"
+            f"{bcolors.yellow}MAC Address : {bcolors.endc} {self.mac}"
+            + f" {bcolors.yellow}Vendor : {bcolors.endc} {self.vendor}\n"
+            + f"{bcolors.yellow}OS : {bcolors.endc} {self.os}"
+            + f" {bcolors.yellow}Accuracy : {bcolors.endc} {self.os_accuracy}"
+            + f" {bcolors.yellow}Type : {bcolors.endc} {self.os_type[:20]}\n"
         )
 
     def __str__(self):
@@ -177,19 +178,18 @@ def PortScan(
 
 def CreateNoise(target):
     nm = PortScanner()
-    while True:
-        try:
-            if is_root():
-                nm.scan(hosts=target, arguments="-A -T 5 -D RND:10")
-            else:
-                nm.scan(hosts=target, arguments="-A -T 5")
-        except KeyboardInterrupt:
-            raise SystemExit("Ctr+C, aborting.")
+    try:
+        if is_root():
+            while True:
+                nm.scan(hosts=target, arguments="-A -T 5 -D RND:126")
         else:
-            break
+            while True:
+                nm.scan(hosts=target, arguments="-A -T 5")
+    except KeyboardInterrupt:
+        raise SystemExit("Ctr+C, aborting.")
 
 
-def NoiseScan(target, scantype=ScanType.ARP):
+def NoiseScan(target, timeout, scantype=ScanType.ARP):
     console = Console()
 
     banner("Creating noise...", "green")
@@ -210,9 +210,18 @@ def NoiseScan(target, scantype=ScanType.ARP):
                 NoisyProcesses.append(P)
                 P.start()
 
+            while True:
+                sleep(1)
+                if timeout:
+                    timeout-=1
+                    if timeout <= 0:
+                        break
+
         print("Noise scan complete!")
         for P in NoisyProcesses:
             P.terminate()
+        raise SystemExit
+
     except KeyboardInterrupt:
         log.logger("error", "Noise scan interrupted!")
         raise SystemExit
@@ -270,7 +279,7 @@ def InitHostInfo(nm, target):
     return mac, vendor, os, os_accuracy, os_type
 
 
-def AnalyseScanResults(nm, term_cols, target=None):
+def AnalyseScanResults(nm, term_width, target=None):
     """
     Analyse and print scan results.
     """
@@ -291,7 +300,7 @@ def AnalyseScanResults(nm, term_cols, target=None):
             target, mac, vendor, os, os_accuracy, os_type
         )
 
-    print(CurrentTargetInfo.colored().center(term_cols))
+    print(CurrentTargetInfo.colored())
 
     reason = nm[target]["status"]["reason"]
 
@@ -324,11 +333,13 @@ def AnalyseScanResults(nm, term_cols, target=None):
             version = nm[str(target)]["tcp"][int(port)]["version"]
 
         console.print(
-            f"[cyan]Port: [/cyan] {port}\n"
-            + f"[cyan]State: [/cyan] {state}\n"
-            + f"[cyan]Service: [/cyan] {service[:15]}\n"
-            + f"[cyan]Product: [/cyan] {product[:20]}\n"
-            + f"[cyan]Version: [/cyan] {version[:15]}"
+            (
+                "[cyan]Port : [/cyan]{0:10}" + 
+                " [cyan]State : [/cyan]{1:10}" +
+                " [cyan]Service : [/cyan]{2:15}" +
+                " [cyan]Product : [/cyan]{3:20}" +
+                " [cyan]Version : [/cyan]{4:15}"
+            ).format(str(port), state, service[:15], product[:20], version[:15])
         )
 
         if state == "open":
