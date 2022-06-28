@@ -56,6 +56,7 @@ def crawl(target_url):
                     urls.add(url)
 
     if len(urls) < 10:
+        urls_temp = set() # we need to do this because we get a RuntimeError due to changed size in set during iteration
         for each_url in urls:
             try:
                 reqs = get(each_url)
@@ -81,10 +82,14 @@ def crawl(target_url):
                             url = f"{each_url}{url}"
 
                         if url not in urls:
-                            urls.add(url)
+                            urls_temp.add(url)
                     else:
                         if url.startswith(each_url):
                             if url not in urls:
-                                urls.add(url)
+                                urls_temp.add(url)
+        
+        for url in urls_temp:
+            urls.add(url)
+
 
     return urls
