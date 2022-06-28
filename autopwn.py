@@ -70,7 +70,7 @@ scanargs = argparser.add_argument_group("Scanning", "Options for scanning")
 scanargs.add_argument(
     "-t", "--target",
     help=(
-            "Target range to scan. This argument overwrites the",
+            "Target range to scan. This argument overwrites the " +
             "hostfile argument. (192.168.0.1 or 192.168.0.0/24)"
         ),
     type=str,
@@ -95,7 +95,7 @@ scanargs.add_argument(
 scanargs.add_argument(
     "-nf", "--nmapflags",
     help=(
-            "Custom nmap flags to use for portscan.",
+            "Custom nmap flags to use for portscan." +
             " (Has to be specified like : -nf=\"-O\")"
         ),
     default="",
@@ -113,7 +113,7 @@ scanargs.add_argument(
 scanargs.add_argument(
     "-a", "--api",
     help=(
-            "Specify API key for vulnerability detection ",
+            "Specify API key for vulnerability detection " +
             "for faster scanning. (Default : None)"
         ),
     default=None,
@@ -323,7 +323,7 @@ def InitArgsAPI():
             log.logger(
                 "warning",
                 "No API key specified and no api.txt file found. "
-                + "Vulnerability detection is going to be slower!"
+                + "Vulnerability detection is going to be slower! "
                 + "You can get your own NIST API key from "
                 + "https://nvd.nist.gov/developers/request-an-api-key"
             )
@@ -492,8 +492,8 @@ def DetectIPRange():
         s.connect(("8.8.8.8", 80))
         PrivateIPAdress = str(s.getsockname()[0]).split(".")
         target = (
-                f"{PrivateIPAdress[0]}.",
-                f"{PrivateIPAdress[1]}.",
+                f"{PrivateIPAdress[0]}." +
+                f"{PrivateIPAdress[1]}." +
                 f"{PrivateIPAdress[2]}.0/24"
             )
     except ConnectionError:
@@ -693,7 +693,7 @@ def WebScan():
     )
 
 
-def GetHostsToScan(hosts):
+def GetHostsToScan(hosts, term_width):
     if len(hosts) == 0:
         raise SystemExit(
             "No hosts found! {time} - Scan completed.".format(
@@ -703,8 +703,8 @@ def GetHostsToScan(hosts):
 
     index = 0
     for host in hosts:
-        msg = Text.assemble(("[", "red"), index, ("]", "red"), host, justify="center")
-        console.print(msg)
+        msg = Text.assemble(("[", "red"), str(index), ("] ", "red"), host, justify="center")
+        console.print(str(msg).center(term_width))
         index += 1
 
     if DontAskForConfirmation:
@@ -713,8 +713,8 @@ def GetHostsToScan(hosts):
     console.print(
         "\n[yellow]Enter the index number of the "
         + "host you would like to enumurate further. "
-        + "Enter 'all' to enumurate all hosts. "
-        + "Enter 'exit' to exit [/yellow] ", end=" "
+        + "\nEnter 'all' to enumurate all hosts. "
+        + "\nEnter 'exit' to exit [/yellow] "
     )
 
     while True:
@@ -747,21 +747,22 @@ def GetHostsToScan(hosts):
 
 
 #post scan stuff
-def FurtherEnumuration(hosts):
-    Targets = GetHostsToScan(hosts)
+def FurtherEnumuration(hosts, term_width):
+    Targets = GetHostsToScan(hosts, term_width)
     ScanPorts, ScanVulns, DownloadExploits = UserConfirmation()
     ScanWeb = WebScan()
 
     for host in Targets:
-        if not ScanPorts:
+        if not ScanPorts and not ScanWeb: # user might want to scan for web vulns only
             break
-
-        PortScanResults = PortScan(host, scanspeed, scanmode, nmapflags)
-        PortArray = AnalyseScanResults(PortScanResults,host)
-        if ScanVulns and len(PortArray) > 0:
-            VulnsArray = SearchSploits(PortArray, apiKey)
-            if DownloadExploits and len(VulnsArray) > 0:
-                GetExploitsFromArray(VulnsArray, host)
+        
+        if ScanPorts:
+            PortScanResults = PortScan(host, scanspeed, scanmode, nmapflags)
+            PortArray = AnalyseScanResults(PortScanResults, term_width, host)
+            if ScanVulns and len(PortArray) > 0:
+                VulnsArray = SearchSploits(PortArray, term_width, apiKey)
+                if DownloadExploits and len(VulnsArray) > 0:
+                    GetExploitsFromArray(VulnsArray, term_width, host)
 
         if ScanWeb:
             webvuln(host)
@@ -779,7 +780,7 @@ def main():
         InitArgsConf()
 
     global targetarg, scantype, scanmode, scanspeed, nmapflags, apiKey
-    global outputfile, DontAskForConfirmation, hostfile, noisetimeout
+    global outputfile, DontAskForConfirmation, hostfile, noisetimeout, width
 
     outputfile = args.output
     print_banner()
@@ -799,7 +800,7 @@ def main():
     if not is_root():
         log.logger(
             "error",
-            "It is recommended to run this script as root"
+            "It is recommended to run this script as root "
             + "since it is more silent and accurate."
         )
 
@@ -807,12 +808,12 @@ def main():
     check_nmap()
 
     if scanmode == ScanMode.Noise:
-        NoiseScan(targetarg, scantype, noisetimeout)
+        NoiseScan(targetarg, noisetimeout, scantype)
 
     OnlineHosts = DiscoverHosts(
-            targetarg, scantype, scanspeed, scanmode
+            targetarg, scantype, scanmode
         )
-    FurtherEnumuration(OnlineHosts)
+    FurtherEnumuration(OnlineHosts, width_)
     InitializeReport(ReportMethod, ReportObject)
     console.print(
         "{time} - Scan completed.".format(
