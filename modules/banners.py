@@ -15,7 +15,7 @@ def print_banner():
         /   |  __  __ / /_ ____   / __ \| |     / // | / /  / ___/ __  __ (_)/ /_ ___
        / /| | / / / // __// __ \ / /_/ /| | /| / //  |/ /   \__ \ / / / // // __// _ \\
       / ___ |/ /_/ // /_ / /_/ // ____/ | |/ |/ // /|  /   ___/ // /_/ // // /_ /  __/
-     /_/  |_|\__,_/ \__/ \____//_/      |__/|__//_/ |_/   /____/ \__,_//_/ \__/ \___/
+     /_/  |_|\____/ \__/ \____//_/      |__/|__//_/ |_/   /____/ \____//_/ \__/ \___/
     """
     width, _ = get_terminal_size()
 
@@ -31,7 +31,7 @@ def print_banner():
         width=width, height=8
     )
     console.print(
-        "Developed by GamehunterKaan. (https://auto.pwnspot.com)", style="blue"
+        "Developed by GamehunterKaan. https://auto.pwnspot.com", style="blue1"
     )
     console.print(panel)
     console.print(
